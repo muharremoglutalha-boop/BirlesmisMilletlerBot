@@ -228,6 +228,13 @@ app.get("/oauth/callback", async (req, res) => {
 });
 
 app.get("/health", (req, res) => res.json({ ok: true }));
+app.get("/verify", (req, res) => {
+    const token = String(req.query.token || "");
+
+    return res.redirect(
+        `/auth/roblox?token=${encodeURIComponent(token)}`
+    );
+});
 
 app.listen(PORT, "0.0.0.0", () => {
     console.log(`VERIFY WEBSITE: http://0.0.0.0:${PORT}`);

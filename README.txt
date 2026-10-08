@@ -1,72 +1,14 @@
-# Roblox Discord Bot - Sıfırdan
+BIRLESMIS MILLETLER BOT - YENI TEMEL
 
-## Kurulum
+Bu paket index.js ve website/server.js dosyalarinin temiz yeniden yazilmis halidir.
 
-1. Bu klasörde CMD aç:
-   `cd "C:\Users\bozdo\Desktop\Roblox Bot"`
+1) Mevcut index.js dosyanin yedegini al.
+2) Bu paketteki index.js ile degistir.
+3) website/server.js dosyasini degistir.
+4) .env dosyasini degistirme; gizli degerler aynen kalacak.
+5) Render Environment Variables:
+   VERIFY_WEB_URL=https://birlesmismilletlerbot.onrender.com
+   ROBLOX_OAUTH_REDIRECT_URI=https://birlesmismilletlerbot.onrender.com/oauth/callback
+6) Roblox OAuth uygulamasinda Redirect URI ayni callback adresi olmali.
 
-2. `npm install`
-
-3. `.env.example` dosyasını `.env` olarak kopyala ve kendi gizli bilgilerini gir.
-   Token/API key'i kimseye gönderme.
-
-4. Discord Developer Portal'da:
-   - Server Members Intent
-   - Message Content Intent
-   aç.
-
-5. Botun sunucuda gerekli yetkilere sahip olduğundan emin ol:
-   - View Channels
-   - Send Messages
-   - Embed Links
-   - Read Message History
-   - Manage Channels
-   - Manage Messages
-   - Moderate Members
-   - Kick Members
-   - Ban Members
-
-6. Komutları kaydet:
-   `node register.js`
-
-7. Botu çalıştır:
-   `node index.js`
-
-## Komutlar
-
-/mute
-/kick
-/ban
-/roblox-bagla
-/rütbe-sorgu
-/grup-listele
-/rütbe-terfi
-/rütbe-degistir
-/duyuru
-/ticket-panel
-
-## Rütbe sistemi
-
-Rütbe yönetimi için Discord hesabı önce `/roblox-bagla` ile Roblox hesabına bağlanır.
-
-Bağlı Roblox hesabının grup rank'ı 60 veya üstü olmalıdır.
-
-Rank 60 = Dışişleri Bakanlığı seviyesi.
-
-Vatandas role ID:
-878879091
-
-Terfi zincirleri:
-Türkiye:
-Vatandas -> Türk Askeri -> Türkiye Elcisi -> Türkiye  Dışişleri Bakanlığı -> Türkiye mareşal
-
-İspanya:
-Vatandas -> Ispanyol Askeri -> Ispanya Elcisi -> Ispanya Dışişleri Bakanlığı -> Ispanya mareșal
-
-Fransa:
-Vatandas -> Fransa Askeri -> Fransa Elcisi -> Fransa Dışişleri Bakanlığı -> Franse mareșal
-
-Almanya:
-Vatandas -> Alman Askeri -> Almanya Elcisi -> Almanya Dışişleri Bakanlığı -> DE maresal
-
-Creator, Bot, Admin, Dünya Baris Örgütü, Dünya Saglik Örgütü, Guest ve "." hedef rütbe olarak kullanılmaz.
+Not: index.js komutlari kendi icinde kaydeder; ayri register.js calistirmak gerekmez.
