@@ -1,774 +1,2431 @@
 const {
-  Client,
-  GatewayIntentBits,
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  PermissionsBitField,
-  ChannelType,
-  SlashCommandBuilder
+    Client,
+    GatewayIntentBits,
+    EmbedBuilder,
+    ActionRowBuilder,
+    StringSelectMenuBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+    PermissionsBitField
 } = require("discord.js");
+
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+
 require("dotenv").config();
-require("./website/server.js");
+
+
+// ======================================================
+// CLIENT
+// ======================================================
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildModeration,
-    GatewayIntentBits.GuildVoiceStates
-  ]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildModeration
+    ]
 });
 
-const DATA = path.join(__dirname, "data");
-fs.mkdirSync(DATA, { recursive: true });
 
-const LINKS_FILE = path.join(DATA, "links.json");
-const TOKENS_FILE = path.join(DATA, "verify_tokens.json");
-for (const file of [LINKS_FILE, TOKENS_FILE]) {
-  if (!fs.existsSync(file)) fs.writeFileSync(file, "{}");
-}
+// ======================================================
+// AYARLAR
+// ======================================================
 
-const readJson = file => {
-  try { return JSON.parse(fs.readFileSync(file, "utf8")); }
-  catch { return {}; }
-};
-const writeJson = (file, value) =>
-  fs.writeFileSync(file, JSON.stringify(value, null, 2));
+const LOG_CHANNEL_ID =
+    process.env.LOG_CHANNEL_ID;
 
-const MAIN_GUILD_ID = process.env.DISCORD_GUILD_ID || "";
-const VERIFY_GUILD_ID = process.env.VERIFY_GUILD_ID || MAIN_GUILD_ID;
-const VERIFY_WEB_URL =
-  (process.env.VERIFY_WEB_URL || "https://birlesmismilletlerbot.onrender.com")
-    .replace(/\/+$/, "");
-
-const GUILDS = {
-  main: MAIN_GUILD_ID,
-  turkiye: "1557114176655327322",
-  ispanya: "1557106841551511624",
-  fransa: "1557106587141677087",
-  almanya: "1557104978940661830"
-};
+const UPDATE_CHANNEL_ID =
+    process.env.UPDATE_CHANNEL_ID;
 
 const GROUPS = {
-  turkiye: process.env.ROBLOX_TURKEY_GROUP_ID || process.env.ROBLOX_GROUP_ID,
-  ispanya: process.env.ROBLOX_SPAIN_GROUP_ID,
-  fransa: process.env.ROBLOX_FRANCE_GROUP_ID,
-  almanya: process.env.ROBLOX_GERMANY_GROUP_ID
+    turkiye: process.env.ROBLOX_TURKEY_GROUP_ID || process.env.ROBLOX_GROUP_ID,
+    almanya: process.env.ROBLOX_GERMANY_GROUP_ID,
+    fransa: process.env.ROBLOX_FRANCE_GROUP_ID,
+    ispanya: process.env.ROBLOX_SPAIN_GROUP_ID
 };
 
-const MAIN_ROLES = {
-  dogrulanmamis: "1557121149509570621",
-  dogrulandi: "1557121092806770759",
-  turkiye: "1557116799730843809",
-  ispanya: "1557114466112512081",
-  fransa: "1557113195343126548",
-  almanya: "1557109207839281283"
-};
+const VERIFY_WEB_URL =
+    process.env.VERIFY_WEB_URL || "http://localhost:3000";
 
-const COUNTRY = {
-  turkiye: {
-    name: "Türkiye",
-    guild: GUILDS.turkiye,
-    verified: "1557118814213378109",
-    unverified: "1557118849474633859",
-    personnel: "1557118481756061796",
-    ranks: {
-      "Acemi Asker": "1557118408816861264",
-      "Piyade": "1557118326637858828",
-      "Onbaşı": "1557118242869354536",
-      "Çavuş": "1557118174150004756",
-      "Teğmen": "1557118093367447614",
-      "Yüzbaşı": "1557118047221972992",
-      "Albay": "1557117988597927945",
-      "Maresal": "1557117864102723655"
-    }
-  },
-  ispanya: {
-    name: "İspanya",
-    guild: GUILDS.ispanya,
-    verified: "1557116423157973012",
-    unverified: "1557116461636517889",
-    personnel: "1557116090025250919",
-    ranks: {
-      "Soldado": "1557116035734183987",
-      "Cabo": "1557115982357471352",
-      "Sargento": "1557115908022083605",
-      "Suboficial": "1557115836291096626",
-      "Teniente": "1557115786085142588",
-      "Capitán": "1557115736110145657",
-      "Coronel": "1557115648784465960",
-      "General": "1557115599975616572",
-      "Maresal": "1557115529536213192"
-    }
-  },
-  fransa: {
-    name: "Fransa",
-    guild: GUILDS.fransa,
-    verified: "1557112445854683167",
-    unverified: "1557112478465265746",
-    personnel: "1557112320633606224",
-    ranks: {
-      "Soldat": "1557112260332228628",
-      "Caporal": "1557112200357748776",
-      "Sergent": "1557112131390804190",
-      "Adjudant": "1557112081097035987",
-      "Lieutenant": "1557112049408942110",
-      "Capitaline": "1557111978936377414",
-      "Colonel": "1557111921008975932",
-      "Général": "1557111864457044039",
-      "Maresal": "1557111791362900138"
-    }
-  },
-  almanya: {
-    name: "Almanya",
-    guild: GUILDS.almanya,
-    verified: "1557107474421522503",
-    unverified: "1557107431870562407",
-    personnel: "1557106979497844777",
-    ranks: {
-      "Er": "1557106892940116078",
-      "Gefreiter": "1557107548044271747",
-      "Obergefreiter": "1557107609427779765",
-      "Feldwebel": "1557107667850494095",
-      "Leutnant": "1557107741728837663",
-      "Hauptmann": "1557107800113545327",
-      "Oberst": "1557107885690064958",
-      "General": "1557107951238381638",
-      "Maresal": "1557108030821113959"
-    }
-  }
-};
+const VERIFY_TOKEN_TTL =
+    10 * 60 * 1000;
 
-const ALL_RANK_ROLE_IDS = Object.values(COUNTRY)
-  .flatMap(c => Object.values(c.ranks));
+const VERIFIED_ROLE_ID =
+    process.env.VERIFIED_ROLE_ID || "";
 
-function robloxHeaders(extra = {}) {
-  return {
-    "x-api-key": process.env.ROBLOX_API_KEY || "",
-    ...extra
-  };
+const VERIFY_GUILD_ID =
+    process.env.VERIFY_GUILD_ID || "";
+
+
+
+// ======================================================
+// DATA KLASÃ–RÃœ
+// ======================================================
+
+const dataFolder =
+    path.join(__dirname, "data");
+
+if (!fs.existsSync(dataFolder)) {
+    fs.mkdirSync(dataFolder, {
+        recursive: true
+    });
 }
 
-async function robloxRequest(url, options = {}) {
-  const response = await fetch(url, {
-    ...options,
-    headers: robloxHeaders(options.headers || {})
-  });
-  const text = await response.text();
-  let data = {};
-  try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
-  if (!response.ok) {
-    throw new Error(`Roblox API ${response.status}: ${text.slice(0, 500)}`);
-  }
-  return data;
+const linksFile =
+    path.join(dataFolder, "links.json");
+
+if (!fs.existsSync(linksFile)) {
+    fs.writeFileSync(
+        linksFile,
+        JSON.stringify({}, null, 4)
+    );
 }
 
-async function findRobloxUser(username) {
-  const r = await fetch("https://users.roblox.com/v1/usernames/users", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      usernames: [username],
-      excludeBannedUsers: false
-    })
-  });
-  const data = await r.json();
-  if (!r.ok || !data.data?.length) return null;
-  return data.data[0];
-}
 
-async function getGroupRoles(groupId) {
-  if (!groupId) return [];
-  const roles = [];
-  let token = "";
-  do {
-    let url =
-      `https://apis.roblox.com/cloud/v2/groups/${groupId}/roles?maxPageSize=100`;
-    if (token) url += `&pageToken=${encodeURIComponent(token)}`;
-    const data = await robloxRequest(url);
-    for (const role of data.groupRoles || []) {
-      roles.push({
-        id: String(role.id).split("/").pop(),
-        name: role.displayName,
-        rank: Number(role.rank)
-      });
-    }
-    token = data.nextPageToken || "";
-  } while (token);
-  return roles;
-}
+// ======================================================
+// LINKLER
+// ======================================================
 
-async function getMembership(groupId, userId) {
-  if (!groupId) return null;
-  const filter = encodeURIComponent(`user == 'users/${userId}'`);
-  const data = await robloxRequest(
-    `https://apis.roblox.com/cloud/v2/groups/${groupId}/memberships?filter=${filter}&maxPageSize=10`
-  );
-  return data.groupMemberships?.[0] || null;
-}
+function loadLinks() {
 
-async function getUserRank(groupId, userId) {
-  const membership = await getMembership(groupId, userId);
-  if (!membership?.role) return null;
-  const roleId = String(membership.role).split("/").pop();
-  const roles = await getGroupRoles(groupId);
-  return roles.find(r => String(r.id) === roleId) || null;
-}
-
-async function changeRank(groupId, userId, roleId) {
-  const membership = await getMembership(groupId, userId);
-  if (!membership?.path) throw new Error("Kullanıcı grupta değil.");
-  const membershipId = membership.path.split("/").pop();
-  await robloxRequest(
-    `https://apis.roblox.com/cloud/v2/groups/${groupId}/memberships/${membershipId}:assignRole`,
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ role: `groups/${groupId}/roles/${roleId}` })
-    }
-  );
-}
-
-async function listJoinRequests(groupId, userId) {
-  const filter = encodeURIComponent(`user == 'users/${userId}'`);
-  const data = await robloxRequest(
-    `https://apis.roblox.com/cloud/v2/groups/${groupId}/join-requests?filter=${filter}&maxPageSize=10`
-  );
-  return data.groupJoinRequests || [];
-}
-
-async function acceptJoinRequest(groupId, requestId) {
-  await robloxRequest(
-    `https://apis.roblox.com/cloud/v2/groups/${groupId}/join-requests/${requestId}:accept`,
-    { method: "POST" }
-  );
-}
-
-async function removeFromGroup(groupId, userId) {
-  const membership = await getMembership(groupId, userId);
-  if (!membership?.path) throw new Error("Kullanıcı grupta değil.");
-  const membershipId = membership.path.split("/").pop();
-  await robloxRequest(
-    `https://apis.roblox.com/cloud/v2/groups/${groupId}/memberships/${membershipId}:unassignRole`,
-    { method: "POST" }
-  );
-}
-
-function embed(color, title, description) {
-  return new EmbedBuilder()
-    .setColor(color)
-    .setTitle(title)
-    .setDescription(description)
-    .setTimestamp();
-}
-
-function ok(title, description) {
-  return embed(0x57f287, `✅ ${title}`, description);
-}
-function fail(title, description) {
-  return embed(0xed4245, `❌ ${title}`, description);
-}
-
-async function sendLog(guild, title, description) {
-  try {
-    const id =
-      guild.id === GUILDS.turkiye ? "1557128581895823552" :
-      guild.id === GUILDS.almanya ? "1557128718437056652" :
-      guild.id === GUILDS.fransa ? "1557128615538335774" :
-      guild.id === GUILDS.ispanya ? "1557128667375730800" :
-      process.env.LOG_CHANNEL_ID;
-    if (!id) return;
-    const channel = await client.channels.fetch(id);
-    if (channel?.isTextBased()) {
-      await channel.send({ embeds: [embed(0x5865f2, title, description)] });
-    }
-  } catch {}
-}
-
-function formatList(values) {
-  return values.length ? values.join("\n") : "None";
-}
-
-function updateEmbed(member, added, removed) {
-  const now = new Date();
-  const stamp = now.toLocaleString("tr-TR", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-    hour: "2-digit", minute: "2-digit"
-  });
-  return new EmbedBuilder()
-    .setColor(0x2ecc71)
-    .setTitle("Update")
-    .addFields(
-      { name: "Nickname", value: member.displayName || member.user.username, inline: false },
-      { name: "Added Roles", value: formatList(added), inline: false },
-      { name: "Removed Roles", value: formatList(removed), inline: false }
-    )
-    .setFooter({ text: `RoWii - ${stamp}` });
-}
-
-async function updateMember(member, linked) {
-  const country = COUNTRY[linked.country];
-  if (!country) throw new Error("Hesabın ülke bağlantısı bulunamadı.");
-
-  const rank = await getUserRank(GROUPS[linked.country], linked.robloxId);
-  if (!rank) throw new Error("Roblox grubunda üyelik bulunamadı.");
-
-  const added = [];
-  const removed = [];
-
-  const removeIds = new Set([
-    ...ALL_RANK_ROLE_IDS,
-    ...Object.values(COUNTRY).flatMap(c => [c.verified, c.unverified, c.personnel])
-  ]);
-
-  const preserve = new Set([
-    MAIN_ROLES.dogrulanmamis,
-    MAIN_ROLES.dogrulandi
-  ]);
-
-  const rankNames = new Set(
-    Object.values(COUNTRY).flatMap(c => Object.keys(c.ranks))
-  );
-  const toRemove = member.roles.cache.filter(r =>
-    ((removeIds.has(r.id) || (member.guild.id === MAIN_GUILD_ID && rankNames.has(r.name)))
-      && !preserve.has(r.id))
-  );
-
-  if (member.guild.id === MAIN_GUILD_ID) {
-    if (member.roles.cache.has(MAIN_ROLES.dogrulanmamis)) {
-      await member.roles.remove(MAIN_ROLES.dogrulanmamis);
-      removed.push("Doğrulanmamış");
-    }
-    if (!member.roles.cache.has(MAIN_ROLES.dogrulandi)) {
-      await member.roles.add(MAIN_ROLES.dogrulandi);
-      added.push("Doğrulandı");
-    }
-
-    const countryRole = MAIN_ROLES[linked.country];
-    if (countryRole && !member.roles.cache.has(countryRole)) {
-      await member.roles.add(countryRole);
-      added.push(country.name);
-    }
-  }
-
-  if (country.guild === member.guild.id) {
-    if (member.roles.cache.has(country.unverified)) {
-      await member.roles.remove(country.unverified);
-      removed.push("Doğrulanmamış");
-    }
-    if (!member.roles.cache.has(country.verified)) {
-      await member.roles.add(country.verified);
-      added.push("Doğrulandı");
-    }
-    if (country.personnel && !member.roles.cache.has(country.personnel)) {
-      await member.roles.add(country.personnel);
-      added.push("Personel");
-    }
-  }
-
-  if (member.guild.id === country.guild) {
-    const targetRoleId = country.ranks[rank.name];
-    if (targetRoleId && !member.roles.cache.has(targetRoleId)) {
-      await member.roles.add(targetRoleId);
-      added.push(rank.name);
-    }
-  } else if (member.guild.id === MAIN_GUILD_ID) {
-    const targetRole = member.guild.roles.cache.find(r => r.name === rank.name);
-    if (targetRole && !member.roles.cache.has(targetRole.id)) {
-      await member.roles.add(targetRole);
-      added.push(targetRole.name);
-    }
-  }
-
-  for (const role of toRemove.values()) {
     try {
-      await member.roles.remove(role);
-      removed.push(role.name);
-    } catch {}
-  }
 
-  linked.verified = true;
-  linked.country = linked.country;
-  linked.robloxUsername = linked.robloxUsername || linked.username;
-  linked.lastUpdateAt = Date.now();
+        return JSON.parse(
+            fs.readFileSync(
+                linksFile,
+                "utf8"
+            )
+        );
 
-  const links = readJson(LINKS_FILE);
-  links[member.id] = linked;
-  writeJson(LINKS_FILE, links);
+    } catch {
 
-  return { rank, added, removed };
+        return {};
+    }
 }
 
-function createCommands() {
-  return [
-    new SlashCommandBuilder().setName("verify")
-      .setDescription("Roblox hesabını Discord hesabına bağlar."),
 
-    new SlashCommandBuilder().setName("update")
-      .setDescription("Roblox rütbeni Discord rollerine senkronize eder."),
+function saveLinks(data) {
 
-    new SlashCommandBuilder().setName("grup-istek")
-      .setDescription("Roblox grup katılım isteğini kabul eder.")
-      .addStringOption(o => o.setName("kullanici").setDescription("Roblox kullanıcı adı").setRequired(true))
-      .addStringOption(o => o.setName("ulke").setDescription("Ülke").setRequired(true)
-        .addChoices(
-          { name: "Türkiye", value: "turkiye" },
-          { name: "İspanya", value: "ispanya" },
-          { name: "Fransa", value: "fransa" },
-          { name: "Almanya", value: "almanya" }
-        ))
-      .addStringOption(o => o.setName("sebep").setDescription("Sebep").setRequired(true)),
-
-    new SlashCommandBuilder().setName("grup-at")
-      .setDescription("Roblox grup üyeliğini kaldırır.")
-      .addStringOption(o => o.setName("kullanici").setDescription("Roblox kullanıcı adı").setRequired(true))
-      .addStringOption(o => o.setName("ulke").setDescription("Ülke").setRequired(true)
-        .addChoices(
-          { name: "Türkiye", value: "turkiye" },
-          { name: "İspanya", value: "ispanya" },
-          { name: "Fransa", value: "fransa" },
-          { name: "Almanya", value: "almanya" }
-        ))
-      .addStringOption(o => o.setName("sebep").setDescription("Sebep").setRequired(true)),
-
-    new SlashCommandBuilder().setName("grup-listele")
-      .setDescription("Roblox kullanıcısının bulunduğu grupları listeler.")
-      .addStringOption(o => o.setName("kullanici").setDescription("Roblox kullanıcı adı").setRequired(true))
-      .addStringOption(o => o.setName("sebep").setDescription("Sebep").setRequired(true)),
-
-    new SlashCommandBuilder().setName("rütbe-sorgu")
-      .setDescription("Roblox ve Discord profil bilgilerini gösterir.")
-      .addStringOption(o => o.setName("kullanici").setDescription("Roblox kullanıcı adı").setRequired(true)),
-
-    new SlashCommandBuilder().setName("rütbe-terfi")
-      .setDescription("Kullanıcıyı bir sonraki gerçek Roblox rütbesine terfi ettirir.")
-      .addStringOption(o => o.setName("kullanici").setDescription("Roblox kullanıcı adı").setRequired(true))
-      .addStringOption(o => o.setName("ulke").setDescription("Ülke").setRequired(true)
-        .addChoices(
-          { name: "Türkiye", value: "turkiye" },
-          { name: "İspanya", value: "ispanya" },
-          { name: "Fransa", value: "fransa" },
-          { name: "Almanya", value: "almanya" }
-        ))
-      .addStringOption(o => o.setName("sebep").setDescription("Sebep").setRequired(true)),
-
-    new SlashCommandBuilder().setName("rütbe-degistir")
-      .setDescription("Doğrulanmış kullanıcının Roblox rütbesini değiştirir.")
-      .addStringOption(o => o.setName("kullanici").setDescription("Roblox kullanıcı adı").setRequired(true))
-      .addStringOption(o => o.setName("rutbe").setDescription("Yeni gerçek Roblox rütbesi").setRequired(true).setAutocomplete(true))
-      .addStringOption(o => o.setName("sebep").setDescription("Sebep").setRequired(true)),
-
-    new SlashCommandBuilder().setName("mute")
-      .setDescription("Discord kullanıcısını susturur.")
-      .addUserOption(o => o.setName("kullanici").setDescription("Kullanıcı").setRequired(true))
-      .addIntegerOption(o => o.setName("dakika").setDescription("Dakika").setRequired(true).setMinValue(1).setMaxValue(10080))
-      .addStringOption(o => o.setName("sebep").setDescription("Sebep").setRequired(true)),
-
-    new SlashCommandBuilder().setName("unmute")
-      .setDescription("Susturmayı kaldırır.")
-      .addUserOption(o => o.setName("kullanici").setDescription("Kullanıcı").setRequired(true))
-      .addStringOption(o => o.setName("sebep").setDescription("Sebep").setRequired(true)),
-
-    new SlashCommandBuilder().setName("kick")
-      .setDescription("Kullanıcıyı sunucudan atar.")
-      .addUserOption(o => o.setName("kullanici").setDescription("Kullanıcı").setRequired(true))
-      .addStringOption(o => o.setName("sebep").setDescription("Sebep").setRequired(true)),
-
-    new SlashCommandBuilder().setName("ban")
-      .setDescription("Kullanıcıyı sunucudan yasaklar.")
-      .addUserOption(o => o.setName("kullanici").setDescription("Kullanıcı").setRequired(true))
-      .addStringOption(o => o.setName("sebep").setDescription("Sebep").setRequired(true)),
-
-    new SlashCommandBuilder().setName("duyuru")
-      .setDescription("Duyuru gönderir.")
-      .addStringOption(o => o.setName("baslik").setDescription("Başlık").setRequired(true))
-      .addStringOption(o => o.setName("icerik").setDescription("İçerik").setRequired(true)),
-
-    new SlashCommandBuilder().setName("ticket-panel")
-      .setDescription("Ticket paneli oluşturur.")
-  ].map(c => c.toJSON());
+    fs.writeFileSync(
+        linksFile,
+        JSON.stringify(data, null, 4)
+    );
 }
+
+const verifyTokensFile =
+    path.join(dataFolder, "verify_tokens.json");
+
+if (!fs.existsSync(verifyTokensFile)) {
+    fs.writeFileSync(
+        verifyTokensFile,
+        JSON.stringify({}, null, 4)
+    );
+}
+
+function loadVerifyTokens() {
+    try {
+        return JSON.parse(
+            fs.readFileSync(
+                verifyTokensFile,
+                "utf8"
+            )
+        );
+    } catch {
+        return {};
+    }
+}
+
+function saveVerifyTokens(data) {
+    fs.writeFileSync(
+        verifyTokensFile,
+        JSON.stringify(data, null, 4)
+    );
+}
+
+function createVerifyToken(discordId) {
+    const tokens = loadVerifyTokens();
+    const now = Date.now();
+
+    for (const [token, value] of Object.entries(tokens)) {
+        if (!value || value.expiresAt <= now || value.used) {
+            delete tokens[token];
+        }
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+
+    tokens[token] = {
+        discordId: String(discordId),
+        createdAt: now,
+        expiresAt: now + VERIFY_TOKEN_TTL,
+        used: false
+    };
+
+    saveVerifyTokens(tokens);
+
+    return token;
+}
+
+
+// ======================================================
+// ROBLOX API
+// ======================================================
+
+async function robloxRequest(
+    url,
+    options = {}
+) {
+
+    const response =
+        await fetch(
+            url,
+            {
+                ...options,
+
+                headers: {
+                    "x-api-key":
+                        process.env.ROBLOX_API_KEY,
+
+                    ...(options.headers || {})
+                }
+            }
+        );
+
+    const text =
+        await response.text();
+
+    let data = {};
+
+    try {
+
+        data =
+            text
+                ? JSON.parse(text)
+                : {};
+
+    } catch {
+
+        data = {
+            raw: text
+        };
+    }
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            `Roblox API ${response.status}: ${text}`
+        );
+    }
+
+    return data;
+}
+
+
+// ======================================================
+// ROBLOX KULLANICI BUL
+// ======================================================
+
+async function findRobloxUser(
+    username
+) {
+
+    const response =
+        await fetch(
+            "https://users.roblox.com/v1/usernames/users",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    usernames: [username],
+                    excludeBannedUsers: false
+                })
+            }
+        );
+
+    const data =
+        await response.json();
+
+    if (!response.ok) {
+
+        throw new Error(
+            "Roblox kullanÄ±cÄ± aramasÄ± baÅŸarÄ±sÄ±z."
+        );
+    }
+
+    if (
+        !data.data ||
+        data.data.length === 0
+    ) {
+
+        return null;
+    }
+
+    return data.data[0];
+}
+
+
+// ======================================================
+// GRUP ROLLERÄ°
+// ======================================================
+
+async function getGroupRoles(
+    groupId
+) {
+
+    if (!groupId) {
+
+        return [];
+    }
+
+    const result = [];
+
+    let pageToken = "";
+
+    while (true) {
+
+        let url =
+            `https://apis.roblox.com/cloud/v2/groups/${groupId}/roles?maxPageSize=100`;
+
+        if (pageToken) {
+
+            url +=
+                `&pageToken=${encodeURIComponent(pageToken)}`;
+        }
+
+        const data =
+            await robloxRequest(url);
+
+        for (
+            const role of data.groupRoles || []
+        ) {
+
+            result.push({
+                id: role.id,
+                name: role.displayName,
+                rank: role.rank
+            });
+        }
+
+        pageToken =
+            data.nextPageToken;
+
+        if (!pageToken) {
+            break;
+        }
+    }
+
+    return result;
+}
+
+
+// ======================================================
+// GRUP ÃœYELÄ°ÄžÄ°
+// ======================================================
+
+async function getMembership(
+    groupId,
+    userId
+) {
+
+    if (!groupId) {
+        return null;
+    }
+
+    const filter =
+        encodeURIComponent(
+            `user == 'users/${userId}'`
+        );
+
+    const url =
+        `https://apis.roblox.com/cloud/v2/groups/${groupId}/memberships?filter=${filter}&maxPageSize=10`;
+
+    const data =
+        await robloxRequest(url);
+
+    if (
+        !data.groupMemberships ||
+        data.groupMemberships.length === 0
+    ) {
+
+        return null;
+    }
+
+    return data.groupMemberships[0];
+}
+
+
+// ======================================================
+// RÃœTBE BUL
+// ======================================================
+
+async function getUserRank(
+    groupId,
+    userId
+) {
+
+    const membership =
+        await getMembership(
+            groupId,
+            userId
+        );
+
+    if (!membership) {
+        return null;
+    }
+
+    const rolePath =
+        membership.role;
+
+    if (!rolePath) {
+        return null;
+    }
+
+    const roleId =
+        rolePath.split("/").pop();
+
+    const roles =
+        await getGroupRoles(groupId);
+
+    return (
+        roles.find(
+            role =>
+                String(role.id) ===
+                String(roleId)
+        ) || null
+    );
+}
+
+
+// ======================================================
+// RÃœTBE DEÄžÄ°ÅžTÄ°R
+// ======================================================
+
+async function changeRank(
+    groupId,
+    userId,
+    roleId
+) {
+
+    const membership =
+        await getMembership(
+            groupId,
+            userId
+        );
+
+    if (!membership) {
+
+        throw new Error(
+            "KullanÄ±cÄ± Roblox grubunda bulunmuyor."
+        );
+    }
+
+    const membershipId =
+        membership.path
+            .split("/")
+            .pop();
+
+    await robloxRequest(
+        `https://apis.roblox.com/cloud/v2/groups/${groupId}/memberships/${membershipId}:assignRole`,
+        {
+            method: "POST",
+
+            headers: {
+                "Content-Type":
+                    "application/json"
+            },
+
+            body: JSON.stringify({
+                role:
+                    `groups/${groupId}/roles/${roleId}`
+            })
+        }
+    );
+}
+
+
+// ======================================================
+// LOG
+// ======================================================
+
+async function sendLog(
+    embed
+) {
+
+    try {
+
+        if (!LOG_CHANNEL_ID) {
+            return;
+        }
+
+        const channel =
+            await client.channels.fetch(
+                LOG_CHANNEL_ID
+            );
+
+        if (!channel) {
+            return;
+        }
+
+        await channel.send({
+            embeds: [embed]
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Log gÃ¶nderilemedi:",
+            error.message
+        );
+    }
+}
+
+
+// ======================================================
+// EMBEDLER
+// ======================================================
+
+function successEmbed(
+    title,
+    description
+) {
+
+    return new EmbedBuilder()
+        .setColor(0x2ecc71)
+        .setTitle(`âœ… ${title}`)
+        .setDescription(description)
+        .setTimestamp();
+}
+
+
+function errorEmbed(
+    title,
+    description
+) {
+
+    return new EmbedBuilder()
+        .setColor(0xe74c3c)
+        .setTitle(`âŒ ${title}`)
+        .setDescription(description)
+        .setTimestamp();
+}
+
+
+function infoEmbed(
+    title,
+    description
+) {
+
+    return new EmbedBuilder()
+        .setColor(0x3498db)
+        .setTitle(`â„¹ï¸ ${title}`)
+        .setDescription(description)
+        .setTimestamp();
+}
+
+
+// ======================================================
+// RÃœTBE LÄ°STELERÄ°
+// ======================================================
+
+const COUNTRY_ROLES = {
+
+    turkiye: [
+        {
+            name: "TÃ¼rk Askeri",
+            roleName: "TÃ¼rk Askeri"
+        },
+        {
+            name: "TÃ¼rkiye Elcisi",
+            roleName: "TÃ¼rkiye Elcisi"
+        },
+        {
+            name: "TÃ¼rkiye DÄ±ÅŸiÅŸleri BakanlÄ±ÄŸÄ±",
+            roleName: "TÃ¼rkiye  DÄ±ÅŸiÅŸleri BakanlÄ±ÄŸÄ±"
+        },
+        {
+            name: "TÃ¼rkiye mareÅŸal",
+            roleName: "TÃ¼rkiye mareÅŸal"
+        }
+    ],
+
+    almanya: [
+        {
+            name: "Alman Askeri",
+            roleName: "Alman Askeri"
+        },
+        {
+            name: "Almanya Elcisi",
+            roleName: "Almanya Elcisi"
+        },
+        {
+            name: "Almanya DÄ±ÅŸiÅŸleri BakanlÄ±ÄŸÄ±",
+            roleName: "Almanya DÄ±ÅŸiÅŸleri BakanlÄ±ÄŸÄ±"
+        },
+        {
+            name: "DE maresal",
+            roleName: "DE maresal"
+        }
+    ],
+
+    fransa: [
+        {
+            name: "Fransa Askeri",
+            roleName: "Fransa Askeri"
+        },
+        {
+            name: "Fransa Elcisi",
+            roleName: "Fransa Elcisi"
+        },
+        {
+            name: "Fransa DÄ±ÅŸiÅŸleri BakanlÄ±ÄŸÄ±",
+            roleName: "Fransa DÄ±ÅŸiÅŸleri BakanlÄ±ÄŸÄ±"
+        },
+        {
+            name: "Franse mareÈ™al",
+            roleName: "Franse mareÈ™al"
+        }
+    ],
+
+    ispanya: [
+        {
+            name: "Ispanyol Askeri",
+            roleName: "Ispanyol Askeri"
+        },
+        {
+            name: "Ispanya Elcisi",
+            roleName: "Ispanya Elcisi"
+        },
+        {
+            name: "Ispanya DÄ±ÅŸiÅŸleri BakanlÄ±ÄŸÄ±",
+            roleName: "Ispanya DÄ±ÅŸiÅŸleri BakanlÄ±ÄŸÄ±"
+        },
+        {
+            name: "Ispanya mareÈ™al",
+            roleName: "Ispanya mareÈ™al"
+        }
+    ]
+};
+
+
+// ======================================================
+// YETKÄ° KONTROLÃœ
+// ======================================================
+
+async function checkRankPermission(
+    interaction
+) {
+
+    const links =
+        loadLinks();
+
+    const linked =
+        links[interaction.user.id];
+
+    if (!linked) {
+
+        return {
+            ok: false,
+            reason:
+                "Ã–nce Roblox hesabÄ±nÄ±zÄ± doÄŸrulamanÄ±z gerekiyor."
+        };
+    }
+
+    const groupId =
+        GROUPS[linked.country];
+
+    if (!groupId) {
+
+        return {
+            ok: false,
+            reason:
+                "Bu Ã¼lkenin Roblox grup ID'si henÃ¼z ayarlanmamÄ±ÅŸ."
+        };
+    }
+
+    const rank =
+        await getUserRank(
+            groupId,
+            linked.robloxId
+        );
+
+    if (!rank) {
+
+        return {
+            ok: false,
+            reason:
+                "Roblox grubunda Ã¼yeliÄŸiniz bulunamadÄ±."
+        };
+    }
+
+    // DÄ±ÅŸiÅŸleri BakanlÄ±ÄŸÄ± = 60
+    if (Number(rank.rank) < 60) {
+
+        return {
+            ok: false,
+            reason:
+                "Bu iÅŸlemi kullanabilmek iÃ§in DÄ±ÅŸiÅŸleri BakanlÄ±ÄŸÄ± veya Ã¼zeri rÃ¼tbede olmanÄ±z gerekiyor."
+        };
+    }
+
+    return {
+        ok: true,
+        rank,
+        linked
+    };
+}
+
+
+// ======================================================
+// VERIFY SÄ°STEMÄ°
+// ======================================================
 
 async function registerCommands() {
-  const commands = createCommands();
-  const guildIds = Object.values(GUILDS).filter(Boolean);
-  for (const guildId of guildIds) {
-    try {
-      const guild = await client.guilds.fetch(guildId);
-      await guild.commands.set(commands);
-      console.log(`Komutlar hazır: ${guild.name}`);
-    } catch (e) {
-      console.error(`Komut kayıt hatası ${guildId}:`, e.message);
-    }
-  }
-}
-
-function findLinkedByRobloxUsername(username) {
-  const links = readJson(LINKS_FILE);
-  const needle = String(username).toLowerCase();
-  return Object.values(links).find(x =>
-    x?.verified && String(x.robloxUsername || "").toLowerCase() === needle
-  ) || null;
-}
-
-async function permission(interaction) {
-  if (!interaction.guild) return false;
-  if (interaction.guild.id !== MAIN_GUILD_ID) {
-    await interaction.reply({ embeds: [fail("Yetki", "Bu komut ana yönetim sunucusunda kullanılabilir.")], ephemeral: true });
-    return false;
-  }
-  return true;
-}
-
-client.once("clientReady", async () => {
-  console.log(`BOT HAZIR: ${client.user.tag}`);
-  await registerCommands();
-});
-
-client.on("interactionCreate", async interaction => {
-  try {
-    if (interaction.isAutocomplete()) {
-      if (interaction.commandName !== "rütbe-degistir") return;
-      const username = interaction.options.getString("kullanici") || "";
-      const linked = findLinkedByRobloxUsername(username);
-      const choices = [];
-
-      if (linked?.country && GROUPS[linked.country]) {
-        const roles = await getGroupRoles(GROUPS[linked.country]);
-        for (const role of roles) {
-          if (!role.name || role.name === "." || role.name.toLowerCase() === "guest") continue;
-          choices.push({ name: `${role.name} • Rank ${role.rank}`.slice(0, 100), value: `${linked.country}::${role.id}`.slice(0, 100) });
+    const commands = [
+        {
+            name: "verify",
+            description: "Roblox hesabÄ±nÄ±zÄ± Discord hesabÄ±nÄ±za baÄŸlar."
+        },
+        {
+            name: "register",
+            description: "Slash komutlarÄ±nÄ± Discord sunucusuna yeniden kaydeder."
+        },
+        {
+            name: "mute",
+            description: "Bir kullanÄ±cÄ±yÄ± geÃ§ici olarak susturur.",
+            options: [
+                { type: 6, name: "kullanici", description: "Susturulacak kullanÄ±cÄ±", required: true },
+                { type: 4, name: "dakika", description: "SÃ¼re (dakika)", required: true, min_value: 1, max_value: 40320 },
+                { type: 3, name: "sebep", description: "Susturma sebebi", required: true }
+            ]
+        },
+        {
+            name: "unmute",
+            description: "Bir kullanÄ±cÄ±nÄ±n susturmasÄ±nÄ± kaldÄ±rÄ±r.",
+            options: [
+                { type: 6, name: "kullanici", description: "KullanÄ±cÄ±", required: true },
+                { type: 3, name: "sebep", description: "Sebep", required: true }
+            ]
+        },
+        {
+            name: "kick",
+            description: "Bir kullanÄ±cÄ±yÄ± sunucudan atar.",
+            options: [
+                { type: 6, name: "kullanici", description: "AtÄ±lacak kullanÄ±cÄ±", required: true },
+                { type: 3, name: "sebep", description: "Sebep", required: true }
+            ]
+        },
+        {
+            name: "ban",
+            description: "Bir kullanÄ±cÄ±yÄ± sunucudan yasaklar.",
+            options: [
+                { type: 6, name: "kullanici", description: "Yasaklanacak kullanÄ±cÄ±", required: true },
+                { type: 3, name: "sebep", description: "Sebep", required: true }
+            ]
+        },
+        {
+            name: "rÃ¼tbe-sorgu",
+            description: "Bir Roblox kullanÄ±cÄ±sÄ±nÄ±n rÃ¼tbesini sorgular.",
+            options: [
+                { type: 3, name: "kullanici", description: "Roblox kullanÄ±cÄ± adÄ±", required: true }
+            ]
+        },
+        {
+            name: "grup-listele",
+            description: "Roblox grup rollerini listeler.",
+            options: [
+                { type: 3, name: "sebep", description: "Listeleme sebebi", required: true }
+            ]
+        },
+        {
+            name: "rÃ¼tbe-degistir",
+            description: "Bir Roblox kullanÄ±cÄ±sÄ±nÄ±n rÃ¼tbesini deÄŸiÅŸtirir.",
+            options: [
+                { type: 3, name: "kullanici", description: "Roblox kullanÄ±cÄ± adÄ±", required: true },
+                { type: 3, name: "ulke", description: "Ãœlke", required: true, choices: [
+                    { name: "TÃ¼rkiye", value: "turkiye" },
+                    { name: "Almanya", value: "almanya" },
+                    { name: "Fransa", value: "fransa" },
+                    { name: "Ä°spanya", value: "ispanya" }
+                ]},
+                { type: 3, name: "rutbe", description: "Yeni rÃ¼tbe", required: true, autocomplete: true },
+                { type: 3, name: "sebep", description: "Sebep", required: true }
+            ]
+        },
+        {
+            name: "rÃ¼tbe-terfi",
+            description: "Bir Roblox kullanÄ±cÄ±sÄ±nÄ± bir sonraki rÃ¼tbeye yÃ¼kseltir.",
+            options: [
+                { type: 3, name: "kullanici", description: "Roblox kullanÄ±cÄ± adÄ±", required: true },
+                { type: 3, name: "ulke", description: "Ãœlke", required: true, choices: [
+                    { name: "TÃ¼rkiye", value: "turkiye" },
+                    { name: "Almanya", value: "almanya" },
+                    { name: "Fransa", value: "fransa" },
+                    { name: "Ä°spanya", value: "ispanya" }
+                ]},
+                { type: 3, name: "sebep", description: "Sebep", required: true }
+            ]
+        },
+        {
+            name: "update",
+            description: "Roblox rÃ¼tbenizi ve Discord rollerinizi gÃ¼nceller."
+        },
+        {
+            name: "duyuru",
+            description: "Duyuru oluÅŸturur."
+        },
+        {
+            name: "ticket-panel",
+            description: "Ticket paneli oluÅŸturur.",
+            options: [
+                { type: 3, name: "sebep", description: "Panel oluÅŸturma sebebi", required: true }
+            ]
         }
-      }
+    ];
 
-      await interaction.respond(choices.slice(0, 25));
-      return;
-    }
-
-    if (interaction.isButton() && interaction.customId === "verify_roblox") {
-      const token = crypto.randomBytes(32).toString("hex");
-      const tokens = readJson(TOKENS_FILE);
-      tokens[token] = {
-        discordId: interaction.user.id,
-        createdAt: Date.now(),
-        expiresAt: Date.now() + 10 * 60 * 1000,
-        used: false
-      };
-      writeJson(TOKENS_FILE, tokens);
-
-      const url = `${VERIFY_WEB_URL}/auth/roblox?token=${encodeURIComponent(token)}`;
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setLabel("Link Roblox Account ↗").setStyle(ButtonStyle.Link).setURL(url)
-      );
-      await interaction.reply({
-        embeds: [embed(0x5865f2, "Verification", "Roblox hesabını bu Discord hesabına bağlamak için aşağıdaki butona tıkla.")],
-        components: [row],
-        ephemeral: true
-      });
-      return;
-    }
-
-    if (!interaction.isChatInputCommand()) return;
-    const command = interaction.commandName;
-
-    if (command === "verify") {
-      await interaction.deferReply({ flags: 64 });
-      const links = readJson(LINKS_FILE);
-      const linked = links[interaction.user.id];
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId("verify_roblox")
-          .setLabel(linked?.verified ? "Hesap Doğrulandı" : "Link Roblox Account ↗")
-          .setStyle(linked?.verified ? ButtonStyle.Secondary : ButtonStyle.Primary)
-          .setDisabled(Boolean(linked?.verified))
-      );
-      await interaction.editReply({
-        embeds: [embed(0x5865f2, "Verification", linked?.verified
-          ? `Bağlı Roblox hesabı: **${linked.robloxUsername || "Bilinmiyor"}**`
-          : "Roblox hesabını bağlamak için aşağıdaki butona tıkla.")],
-        components: [row]
-      });
-      return;
-    }
-
-    if (command === "update") {
-      const links = readJson(LINKS_FILE);
-      const linked = links[interaction.user.id];
-      if (!linked?.robloxId) {
-        await interaction.reply({ embeds: [fail("Update", "Önce Roblox hesabını bağlamalısın.")], ephemeral: true });
-        return;
-      }
-      await interaction.deferReply();
-      const result = await updateMember(await interaction.guild.members.fetch(interaction.user.id), linked);
-      await interaction.editReply({ embeds: [updateEmbed(await interaction.guild.members.fetch(interaction.user.id), result.added, result.removed)] });
-      await sendLog(interaction.guild, "Update", `**${interaction.user}** • ${linked.robloxUsername || linked.robloxId}`);
-      return;
-    }
-
-    if (["grup-istek", "grup-at", "grup-listele", "rütbe-sorgu", "rütbe-terfi", "rütbe-degistir"].includes(command)) {
-      if (!(await permission(interaction))) return;
-    }
-
-    if (command === "grup-istek") {
-      await interaction.deferReply();
-      const username = interaction.options.getString("kullanici");
-      const country = interaction.options.getString("ulke");
-      const reason = interaction.options.getString("sebep");
-      const user = await findRobloxUser(username);
-      if (!user) return interaction.editReply({ embeds: [fail("Grup İsteği", "Roblox kullanıcısı bulunamadı.")] });
-      const requests = await listJoinRequests(GROUPS[country], user.id);
-      const request = requests[0];
-      if (!request) return interaction.editReply({ embeds: [fail("Grup İsteği", "Bekleyen grup isteği bulunamadı.")] });
-      const requestId = String(request.path || request.id || "").split("/").pop();
-      await acceptJoinRequest(GROUPS[country], requestId);
-      const roles = await getGroupRoles(GROUPS[country]);
-      const first = roles.filter(r => r.rank > 0).sort((a,b) => a.rank-b.rank)[0];
-      if (first) await changeRank(GROUPS[country], user.id, first.id);
-      await interaction.editReply({ embeds: [ok("Grup İsteği Kabul Edildi", `**${user.name}**\n**Ülke:** ${COUNTRY[country].name}\n**İlk Rütbe:** ${first?.name || "Varsayılan"}\n**Sebep:** ${reason}`)] });
-      return;
-    }
-
-    if (command === "grup-at") {
-      await interaction.deferReply();
-      const username = interaction.options.getString("kullanici");
-      const country = interaction.options.getString("ulke");
-      const reason = interaction.options.getString("sebep");
-      const user = await findRobloxUser(username);
-      if (!user) return interaction.editReply({ embeds: [fail("Grup At", "Roblox kullanıcısı bulunamadı.")] });
-      await removeFromGroup(GROUPS[country], user.id);
-      await interaction.editReply({ embeds: [ok("Gruptan Çıkarıldı", `**${user.name}** • ${COUNTRY[country].name}\n**Sebep:** ${reason}`)] });
-      return;
-    }
-
-    if (command === "rütbe-terfi") {
-      await interaction.deferReply();
-      const username = interaction.options.getString("kullanici");
-      const country = interaction.options.getString("ulke");
-      const reason = interaction.options.getString("sebep");
-      const user = await findRobloxUser(username);
-      if (!user) return interaction.editReply({ embeds: [fail("Terfi", "Roblox kullanıcısı bulunamadı.")] });
-      const current = await getUserRank(GROUPS[country], user.id);
-      if (!current) return interaction.editReply({ embeds: [fail("Terfi", "Kullanıcı grupta değil.")] });
-      const roles = await getGroupRoles(GROUPS[country]);
-      const next = roles.filter(r => r.rank > current.rank).sort((a,b) => a.rank-b.rank)[0];
-      if (!next) return interaction.editReply({ embeds: [fail("Terfi", "Daha yüksek bir rütbe bulunamadı.")] });
-      await changeRank(GROUPS[country], user.id, next.id);
-      await interaction.editReply({ embeds: [ok("Rütbe Terfi", `**${user.name}**\n${current.name} → **${next.name}**\n**Sebep:** ${reason}`)] });
-      return;
-    }
-
-    if (command === "rütbe-degistir") {
-      await interaction.deferReply();
-      const username = interaction.options.getString("kullanici");
-      const choice = interaction.options.getString("rutbe");
-      const reason = interaction.options.getString("sebep");
-      const linked = findLinkedByRobloxUsername(username);
-      if (!linked?.country) return interaction.editReply({ embeds: [fail("Rütbe Değiştir", "Kullanıcı doğrulanmış değil veya ülke bulunamadı.")] });
-      const [country, roleId] = String(choice || "").split("::");
-      if (country !== linked.country || !roleId) return interaction.editReply({ embeds: [fail("Rütbe Değiştir", "Seçilen rütbe kullanıcının doğrulanmış ülkesine ait değil.")] });
-      const roles = await getGroupRoles(GROUPS[country]);
-      const role = roles.find(r => String(r.id) === String(roleId));
-      if (!role || role.name === "." || role.name.toLowerCase() === "guest") return interaction.editReply({ embeds: [fail("Rütbe Değiştir", "Geçersiz rütbe.")] });
-      const user = await findRobloxUser(username);
-      if (!user) return interaction.editReply({ embeds: [fail("Rütbe Değiştir", "Roblox kullanıcısı bulunamadı.")] });
-      await changeRank(GROUPS[country], user.id, role.id);
-      await interaction.editReply({ embeds: [ok("Rütbe Değiştirildi", `**${user.name}** → **${role.name}**\n**Sebep:** ${reason}`)] });
-      return;
-    }
-
-    if (command === "rütbe-sorgu") {
-      await interaction.deferReply();
-      const username = interaction.options.getString("kullanici");
-      const user = await findRobloxUser(username);
-      if (!user) return interaction.editReply({ embeds: [fail("Rütbe Sorgu", "Roblox kullanıcısı bulunamadı.")] });
-      const links = readJson(LINKS_FILE);
-      const linked = Object.values(links).find(x => String(x?.robloxId) === String(user.id));
-      const lines = [
-        `**Kullanıcı:** ${user.name}`,
-        `**Display Name:** ${user.displayName || user.name}`,
-        `**User ID:** ${user.id}`,
-        `**Doğrulama:** ${linked?.verified ? "Doğrulandı" : "Doğrulanmadı"}`,
-        `**Bağlı Ülke:** ${linked?.country ? COUNTRY[linked.country].name : "Yok"}`
-      ];
-      if (linked?.country) {
-        const rank = await getUserRank(GROUPS[linked.country], user.id);
-        lines.push(`**Rütbe:** ${rank?.name || "Üyelik yok"}${rank ? ` (Rank ${rank.rank})` : ""}`);
-      }
-      await interaction.editReply({ embeds: [embed(0x5865f2, "Rütbe Sorgu", lines.join("\n"))] });
-      return;
-    }
-
-    if (command === "grup-listele") {
-      await interaction.deferReply();
-      const username = interaction.options.getString("kullanici");
-      const user = await findRobloxUser(username);
-      if (!user) return interaction.editReply({ embeds: [fail("Grup Listele", "Roblox kullanıcısı bulunamadı.")] });
-      const lines = [];
-      for (const [country, groupId] of Object.entries(GROUPS)) {
-        if (!groupId) continue;
-        const rank = await getUserRank(groupId, user.id);
-        if (rank) lines.push(`**${COUNTRY[country].name}** — ${rank.name} (Rank ${rank.rank})`);
-      }
-      await interaction.editReply({ embeds: [embed(0x5865f2, "Roblox Grupları", lines.length ? lines.join("\n") : "Aktif ülke gruplarında üyelik bulunamadı.")] });
-      return;
-    }
-
-    if (command === "mute") {
-      const user = interaction.options.getUser("kullanici");
-      const minutes = interaction.options.getInteger("dakika");
-      const reason = interaction.options.getString("sebep");
-      const member = await interaction.guild.members.fetch(user.id);
-      await member.timeout(minutes * 60 * 1000, reason);
-      await interaction.reply({ embeds: [ok("Mute", `**${user.tag}** • ${minutes} dakika\n**Sebep:** ${reason}`)] });
-      return;
-    }
-
-    if (command === "unmute") {
-      const user = interaction.options.getUser("kullanici");
-      const reason = interaction.options.getString("sebep");
-      const member = await interaction.guild.members.fetch(user.id);
-      await member.timeout(null, reason);
-      await interaction.reply({ embeds: [ok("Unmute", `**${user.tag}**\n**Sebep:** ${reason}`)] });
-      return;
-    }
-
-    if (command === "kick" || command === "ban") {
-      const user = interaction.options.getUser("kullanici");
-      const reason = interaction.options.getString("sebep");
-      if (command === "kick") await interaction.guild.members.kick(user.id, reason);
-      else await interaction.guild.members.ban(user.id, { reason });
-      await interaction.reply({ embeds: [ok(command === "kick" ? "Kick" : "Ban", `**${user.tag}**\n**Sebep:** ${reason}`)] });
-      return;
-    }
-
-    if (command === "duyuru") {
-      const title = interaction.options.getString("baslik");
-      const content = interaction.options.getString("icerik");
-      await interaction.reply({ embeds: [new EmbedBuilder().setColor(0x5865f2).setTitle(title).setDescription(content).setTimestamp()] });
-      return;
-    }
-
-    if (command === "ticket-panel") {
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("ticket_open").setLabel("Ticket Aç").setStyle(ButtonStyle.Primary)
-      );
-      await interaction.reply({ embeds: [embed(0x5865f2, "Birleşmiş Milletler Destek Merkezi", "Destek almak için aşağıdaki butona tıklayın.")], components: [row] });
-      return;
-    }
-
-  } catch (error) {
-    console.error("INTERACTION:", error);
-    const e = fail("İşlem Başarısız", error.message || "Bilinmeyen hata.");
     try {
-      if (interaction.deferred || interaction.replied) await interaction.editReply({ embeds: [e] });
-      else await interaction.reply({ embeds: [e], ephemeral: true });
-    } catch {}
-  }
-});
+        if (VERIFY_GUILD_ID) {
+            const guild = await client.guilds.fetch(VERIFY_GUILD_ID);
+            await guild.commands.set(commands);
+            console.log(`SLASH KOMUTLARI YENÄ°LENDÄ°: ${commands.length} komut`);
+            console.log(`Guild: ${guild.name} (${guild.id})`);
+        } else {
+            await client.application.commands.set(commands);
+            console.log(`GLOBAL SLASH KOMUTLARI YENÄ°LENDÄ°: ${commands.length} komut`);
+        }
+    } catch (error) {
+        console.error("SLASH KOMUTLARI KAYDEDÄ°LEMEDÄ°:", error);
+    }
+}
 
-client.login(process.env.DISCORD_TOKEN);
+async function syncVerifiedRole() {
+
+    if (!VERIFIED_ROLE_ID) {
+        return;
+    }
+
+    const links =
+        loadLinks();
+
+    for (const linked of Object.values(links)) {
+
+        if (
+            !linked ||
+            !linked.discordId ||
+            !linked.robloxId ||
+            !linked.verified
+        ) {
+            continue;
+        }
+
+        try {
+
+            const guild =
+                VERIFY_GUILD_ID
+                    ? await client.guilds.fetch(
+                        VERIFY_GUILD_ID
+                    )
+                    : client.guilds.cache.first();
+
+            if (!guild) {
+                continue;
+            }
+
+            const member =
+                await guild.members.fetch(
+                    linked.discordId
+                );
+
+            const role =
+                guild.roles.cache.get(
+                    VERIFIED_ROLE_ID
+                );
+
+            if (
+                role &&
+                !member.roles.cache.has(role.id)
+            ) {
+                await member.roles.add(
+                    role,
+                    "Roblox hesabÄ± doÄŸrulandÄ±."
+                );
+            }
+
+        } catch (error) {
+
+            console.error(
+                "VERIFIED ROLÃœ VERÄ°LEMEDÄ°:",
+                error.message
+            );
+        }
+    }
+}
+
+// ======================================================
+// BOT READY
+// ======================================================
+
+client.once(
+    "ready",
+    async () => {
+
+        console.log(
+            `BOT HAZIR: ${client.user.tag}`
+        );
+
+        console.log(
+            "Roblox baÄŸlantÄ±sÄ± hazÄ±r."
+        );
+
+        await registerCommands();
+
+        await syncVerifiedRole();
+
+        setInterval(
+            syncVerifiedRole,
+            5000
+        );
+    }
+);
+
+
+// ======================================================
+// INTERACTIONS
+// ======================================================
+
+client.on(
+    "interactionCreate",
+    async interaction => {
+
+        try {
+
+            // ==========================================
+            // AUTOCOMPLETE
+            // ==========================================
+
+            if (
+                interaction.isAutocomplete()
+            ) {
+
+                if (
+                    interaction.commandName !==
+                    "rÃ¼tbe-degistir"
+                ) {
+
+                    return;
+                }
+
+                const country =
+                    interaction.options.getString(
+                        "ulke"
+                    );
+
+                const search =
+                    interaction.options.getString(
+                        "rutbe"
+                    ) || "";
+
+                const roles =
+                    COUNTRY_ROLES[country] || [];
+
+                const filtered =
+                    roles.filter(
+                        role =>
+                            role.name
+                                .toLowerCase()
+                                .includes(
+                                    search.toLowerCase()
+                                )
+                    );
+
+                await interaction.respond(
+                    filtered.map(
+                        role => ({
+                            name: role.name,
+                            value: role.roleName
+                        })
+                    )
+                );
+
+                return;
+            }
+
+
+            // ==========================================
+            // BUTTON
+            // ==========================================
+
+            if (
+                interaction.isButton()
+            ) {
+
+                // ROBLOX VERIFY
+                if (
+                    interaction.customId ===
+                    "verify_roblox"
+                ) {
+
+                    const links =
+                        loadLinks();
+
+                    if (
+                        links[interaction.user.id] &&
+                        links[interaction.user.id].verified
+                    ) {
+
+                        await interaction.reply({
+                            embeds: [
+                                successEmbed(
+                                    "Hesap Zaten DoÄŸrulandÄ±",
+                                    "Discord hesabÄ±nÄ±z zaten bir Roblox hesabÄ±na baÄŸlÄ±."
+                                )
+                            ],
+                            ephemeral: true
+                        });
+
+                        return;
+                    }
+
+                    const token =
+                        createVerifyToken(
+                            interaction.user.id
+                        );
+
+                    const verifyUrl =
+                        `${VERIFY_WEB_URL}/auth/roblox?token=${encodeURIComponent(token)}`;
+
+                    const embed =
+                        new EmbedBuilder()
+                            .setColor(0x5865f2)
+                            .setTitle("ðŸ”— Roblox DoÄŸrulama")
+                            .setDescription(
+                                "AÅŸaÄŸÄ±daki butona tÄ±klayarak Roblox hesabÄ±nÄ±zÄ± **bu Discord hesabÄ±na** gÃ¼venli ÅŸekilde baÄŸlayabilirsiniz."
+                            )
+                            .addFields(
+                                {
+                                    name: "Discord HesabÄ±",
+                                    value: `${interaction.user}`,
+                                    inline: true
+                                },
+                                {
+                                    name: "BaÄŸlantÄ±",
+                                    value: "â±ï¸ 10 dakika geÃ§erli",
+                                    inline: true
+                                }
+                            )
+                            .setFooter({
+                                text: "BirleÅŸmiÅŸ Milletler â€¢ Secure Verification"
+                            })
+                            .setTimestamp();
+
+                    const row =
+                        new ActionRowBuilder()
+                            .addComponents(
+                                new ButtonBuilder()
+                                    .setLabel(
+                                        "Roblox ile DoÄŸrula"
+                                    )
+                                    .setStyle(
+                                        ButtonStyle.Link
+                                    )
+                                    .setURL(
+                                        verifyUrl
+                                    )
+                                    .setEmoji("ðŸ”—")
+                            );
+
+                    await interaction.reply({
+                        embeds: [embed],
+                        components: [row],
+                        ephemeral: true
+                    });
+
+                    return;
+                }
+
+
+                // TICKET KAPAT
+                if (
+                    interaction.customId ===
+                    "ticket_close"
+                ) {
+
+                    await interaction.reply({
+                        embeds: [
+                            infoEmbed(
+                                "Ticket KapatÄ±lÄ±yor",
+                                "Bu ticket 5 saniye iÃ§inde kapatÄ±lacak."
+                            )
+                        ]
+                    });
+
+                    setTimeout(
+                        async () => {
+
+                            try {
+                                await interaction.channel.delete();
+                            } catch {}
+                        },
+                        5000
+                    );
+
+                    return;
+                }
+
+
+                // TICKET BÄ°LGÄ°
+                if (
+                    interaction.customId ===
+                    "ticket_info"
+                ) {
+
+                    await interaction.reply({
+                        embeds: [
+                            infoEmbed(
+                                "Ticket Bilgileri",
+                                [
+                                    "â€¢ Sorununuzu aÃ§Ä±k ve anlaÅŸÄ±lÄ±r ÅŸekilde anlatÄ±n.",
+                                    "â€¢ Gereksiz ticket aÃ§mayÄ±n.",
+                                    "â€¢ Sahte/yanlÄ±ÅŸ ÅŸikayet oluÅŸturmayÄ±n.",
+                                    "â€¢ Spam yapmayÄ±n.",
+                                    "â€¢ DoÄŸru bilgileri paylaÅŸÄ±n.",
+                                    "â€¢ Ticket kategorisinin dÄ±ÅŸÄ±na Ã§Ä±kmayÄ±n."
+                                ].join("\n")
+                            )
+                        ],
+                        ephemeral: true
+                    });
+
+                    return;
+                }
+            }
+
+
+            // ==========================================
+            // SELECT MENU
+            // ==========================================
+
+            if (
+                interaction.isStringSelectMenu()
+            ) {
+
+                // TICKET KATEGORÄ°SÄ°
+                if (
+                    interaction.customId ===
+                    "ticket_category"
+                ) {
+
+                    const category =
+                        interaction.values[0];
+
+                    const names = {
+                        army:
+                            "ðŸª– Ordu Åžikayet",
+                        server:
+                            "ðŸ› ï¸ Sunucu Ä°Ã§i Sorun",
+                        gamepass:
+                            "ðŸŽŸï¸ Gamepass"
+                    };
+
+                    const channelName =
+                        `${category}-${interaction.user.username}`
+                            .toLowerCase()
+                            .replace(
+                                /[^a-z0-9-_]/g,
+                                "-"
+                            )
+                            .slice(0, 90);
+
+                    const channel =
+                        await interaction.guild.channels.create({
+                            name: channelName,
+
+                            type: 0,
+
+                            permissionOverwrites: [
+                                {
+                                    id:
+                                        interaction.guild.id,
+
+                                    deny: [
+                                        PermissionsBitField.Flags.ViewChannel
+                                    ]
+                                },
+
+                                {
+                                    id:
+                                        interaction.user.id,
+
+                                    allow: [
+                                        PermissionsBitField.Flags.ViewChannel,
+                                        PermissionsBitField.Flags.SendMessages,
+                                        PermissionsBitField.Flags.ReadMessageHistory
+                                    ]
+                                }
+                            ]
+                        });
+
+                    const buttons =
+                        new ActionRowBuilder()
+                            .addComponents(
+
+                                new ButtonBuilder()
+                                    .setCustomId(
+                                        "ticket_close"
+                                    )
+                                    .setLabel(
+                                        "Ticket Kapat"
+                                    )
+                                    .setStyle(
+                                        ButtonStyle.Danger
+                                    ),
+
+                                new ButtonBuilder()
+                                    .setCustomId(
+                                        "ticket_info"
+                                    )
+                                    .setLabel(
+                                        "Bilgi"
+                                    )
+                                    .setStyle(
+                                        ButtonStyle.Secondary
+                                    )
+                            );
+
+                    await channel.send({
+                        content:
+                            `${interaction.user}`,
+
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor(
+                                    0x2ecc71
+                                )
+                                .setTitle(
+                                    "ðŸŽ« Ticket AÃ§Ä±ldÄ±"
+                                )
+                                .setDescription(
+                                    `**Kategori:** ${names[category]}\n\n` +
+                                    "Yetkili ekip en kÄ±sa sÃ¼rede sizinle ilgilenecektir.\n\n" +
+                                    "LÃ¼tfen probleminizi ayrÄ±ntÄ±lÄ± ÅŸekilde aÃ§Ä±klayÄ±n."
+                                )
+                                .setTimestamp()
+                        ],
+
+                        components: [
+                            buttons
+                        ]
+                    });
+
+                    await interaction.reply({
+                        embeds: [
+                            successEmbed(
+                                "Ticket OluÅŸturuldu",
+                                `TicketÄ±nÄ±z oluÅŸturuldu: ${channel}`
+                            )
+                        ],
+                        ephemeral: true
+                    });
+
+                    return;
+                }
+            }
+
+
+            // ==========================================
+            // MODAL
+            // ==========================================
+
+            if (
+                interaction.isModalSubmit()
+            ) {
+
+                // DUYURU
+                if (
+                    interaction.customId ===
+                    "announcement_modal"
+                ) {
+
+                    const title =
+                        interaction.fields.getTextInputValue(
+                            "announcement_title"
+                        );
+
+                    const content =
+                        interaction.fields.getTextInputValue(
+                            "announcement_content"
+                        );
+
+                    const embed =
+                        new EmbedBuilder()
+                            .setColor(
+                                0x2ecc71
+                            )
+                            .setTitle(
+                                `ðŸ“¢ ${title}`
+                            )
+                            .setDescription(
+                                content
+                            )
+                            .setFooter({
+                                text:
+                                    `Duyuru â€¢ ${interaction.user.tag}`
+                            })
+                            .setTimestamp();
+
+                    await interaction.reply({
+                        embeds: [
+                            successEmbed(
+                                "Duyuru HazÄ±rlandÄ±",
+                                "Duyuru aÅŸaÄŸÄ±daki ÅŸekilde oluÅŸturuldu."
+                            ),
+                            embed
+                        ]
+                    });
+
+                    return;
+                }
+            }
+
+
+            // ==========================================
+            // SLASH COMMAND
+            // ==========================================
+
+            if (
+                !interaction.isChatInputCommand()
+            ) {
+
+                return;
+            }
+
+            const command =
+                interaction.commandName;
+
+
+            // ==========================================
+            // REGISTER
+            // ==========================================
+
+            if (
+                command === "register"
+            ) {
+
+                if (!interaction.memberPermissions?.has(PermissionsBitField.Flags.Administrator)) {
+                    await interaction.reply({
+                        embeds: [
+                            errorEmbed(
+                                "Yetkiniz Yok",
+                                "Bu komutu kullanmak iÃ§in YÃ¶netici yetkisine sahip olmanÄ±z gerekiyor."
+                            )
+                        ],
+                        ephemeral: true
+                    });
+                    return;
+                }
+
+                await interaction.deferReply({ ephemeral: true });
+                await registerCommands();
+
+                await interaction.editReply({
+                    embeds: [
+                        successEmbed(
+                            "Register Yenilendi",
+                            "Slash komutlarÄ± Discord'a yeniden kaydedildi."
+                        )
+                    ]
+                });
+
+                return;
+            }
+
+
+            // ==========================================
+            // VERIFY
+            // ==========================================
+
+            if (
+                command === "verify"
+            ) {
+
+                const links =
+                    loadLinks();
+
+                const linked =
+                    links[interaction.user.id];
+
+                const embed =
+                    new EmbedBuilder()
+                        .setColor(
+                            linked
+                                ? 0x23a559
+                                : 0x5865f2
+                        )
+                        .setTitle(
+                            "ðŸ” Roblox Hesap DoÄŸrulama"
+                        )
+                        .setDescription(
+                            linked
+                                ? "Roblox hesabÄ±nÄ±z baÅŸarÄ±yla bu Discord hesabÄ±na baÄŸlanmÄ±ÅŸ."
+                                : "Roblox hesabÄ±nÄ±zÄ± bu Discord hesabÄ±na baÄŸlamak iÃ§in aÅŸaÄŸÄ±daki butona tÄ±klayÄ±n."
+                        )
+                        .addFields(
+                            {
+                                name: "Durum",
+                                value:
+                                    linked && linked.verified
+                                        ? "ðŸŸ¢ **DoÄŸrulandÄ±**"
+                                        : "ðŸ”´ **DoÄŸrulanmadÄ±**",
+                                inline: true
+                            },
+                            {
+                                name: "Discord",
+                                value:
+                                    `${interaction.user}`,
+                                inline: true
+                            }
+                        )
+                        .setThumbnail(
+                            interaction.user.displayAvatarURL({
+                                extension: "png",
+                                size: 256
+                            })
+                        )
+                        .setFooter({
+                            text:
+                                "BirleÅŸmiÅŸ Milletler â€¢ Verification"
+                        })
+                        .setTimestamp();
+
+                if (linked && linked.robloxId) {
+
+                    embed.addFields(
+                        {
+                            name: "Roblox",
+                            value:
+                                `[${linked.robloxUsername || "Bilinmiyor"}](https://www.roblox.com/users/${linked.robloxId}/profile)`,
+                            inline: true
+                        },
+                        {
+                            name: "Roblox ID",
+                            value:
+                                String(linked.robloxId),
+                            inline: true
+                        }
+                    );
+
+                    const avatarUrl =
+                        `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${encodeURIComponent(linked.robloxId)}&size=150x150&format=Png&isCircular=true`;
+
+                    embed.setThumbnail(
+                        avatarUrl
+                    );
+                }
+
+                const row =
+                    new ActionRowBuilder()
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setCustomId(
+                                    "verify_roblox"
+                                )
+                                .setLabel(
+                                    linked && linked.verified
+                                        ? "Hesap DoÄŸrulandÄ±"
+                                        : "Roblox ile DoÄŸrula"
+                                )
+                                .setEmoji(
+                                    linked && linked.verified
+                                        ? "âœ…"
+                                        : "ðŸ”—"
+                                )
+                                .setStyle(
+                                    linked && linked.verified
+                                        ? ButtonStyle.Secondary
+                                        : ButtonStyle.Primary
+                                )
+                                .setDisabled(
+                                    Boolean(
+                                        linked &&
+                                        linked.verified
+                                    )
+                                )
+                        );
+
+                await interaction.reply({
+                    embeds: [embed],
+                    components: [row]
+                });
+
+                return;
+            }
+
+
+            // ==========================================
+            // MUTE
+            // ==========================================
+
+            if (
+                command === "mute"
+            ) {
+
+                const user =
+                    interaction.options.getUser(
+                        "kullanici"
+                    );
+
+                const minutes =
+                    interaction.options.getInteger(
+                        "dakika"
+                    );
+
+                const reason =
+                    interaction.options.getString(
+                        "sebep"
+                    );
+
+                const member =
+                    await interaction.guild.members.fetch(
+                        user.id
+                    );
+
+                await member.timeout(
+                    minutes * 60 * 1000,
+                    reason
+                );
+
+                await interaction.reply({
+                    embeds: [
+                        successEmbed(
+                            "KullanÄ±cÄ± Susturuldu",
+                            `**${user.tag}** kullanÄ±cÄ±sÄ± **${minutes} dakika** susturuldu.\n\n**Sebep:** ${reason}`
+                        )
+                    ]
+                });
+
+                await sendLog(
+                    successEmbed(
+                        "Mute Log",
+                        `**KullanÄ±cÄ±:** ${user}\n**SÃ¼re:** ${minutes} dakika\n**Yetkili:** ${interaction.user}\n**Sebep:** ${reason}`
+                    )
+                );
+
+                return;
+            }
+
+
+            // ==========================================
+            // UNMUTE
+            // ==========================================
+
+            if (
+                command === "unmute"
+            ) {
+
+                const user =
+                    interaction.options.getUser(
+                        "kullanici"
+                    );
+
+                const reason =
+                    interaction.options.getString(
+                        "sebep"
+                    );
+
+                const member =
+                    await interaction.guild.members.fetch(
+                        user.id
+                    );
+
+                await member.timeout(
+                    null,
+                    reason
+                );
+
+                await interaction.reply({
+                    embeds: [
+                        successEmbed(
+                            "Mute KaldÄ±rÄ±ldÄ±",
+                            `**${user.tag}** kullanÄ±cÄ±sÄ±nÄ±n susturmasÄ± kaldÄ±rÄ±ldÄ±.\n\n**Sebep:** ${reason}`
+                        )
+                    ]
+                });
+
+                return;
+            }
+
+
+            // ==========================================
+            // KICK
+            // ==========================================
+
+            if (
+                command === "kick"
+            ) {
+
+                const user =
+                    interaction.options.getUser(
+                        "kullanici"
+                    );
+
+                const reason =
+                    interaction.options.getString(
+                        "sebep"
+                    );
+
+                const member =
+                    await interaction.guild.members.fetch(
+                        user.id
+                    );
+
+                await member.kick(
+                    reason
+                );
+
+                await interaction.reply({
+                    embeds: [
+                        successEmbed(
+                            "KullanÄ±cÄ± AtÄ±ldÄ±",
+                            `**${user.tag}** sunucudan atÄ±ldÄ±.\n\n**Sebep:** ${reason}`
+                        )
+                    ]
+                });
+
+                return;
+            }
+
+
+            // ==========================================
+            // BAN
+            // ==========================================
+
+            if (
+                command === "ban"
+            ) {
+
+                const user =
+                    interaction.options.getUser(
+                        "kullanici"
+                    );
+
+                const reason =
+                    interaction.options.getString(
+                        "sebep"
+                    );
+
+                await interaction.guild.members.ban(
+                    user.id,
+                    {
+                        reason
+                    }
+                );
+
+                await interaction.reply({
+                    embeds: [
+                        successEmbed(
+                            "KullanÄ±cÄ± YasaklandÄ±",
+                            `**${user.tag}** sunucudan yasaklandÄ±.\n\n**Sebep:** ${reason}`
+                        )
+                    ]
+                });
+
+                return;
+            }
+
+
+            // ==========================================
+            // YETKÄ°LÄ° ROBLOX KOMUTLARI
+            // ==========================================
+
+            if (
+                [
+                    "rÃ¼tbe-sorgu",
+                    "grup-listele",
+                    "rÃ¼tbe-terfi",
+                    "rÃ¼tbe-degistir"
+                ].includes(command)
+            ) {
+
+                const auth =
+                    await checkRankPermission(
+                        interaction
+                    );
+
+                if (!auth.ok) {
+
+                    await interaction.reply({
+                        embeds: [
+                            errorEmbed(
+                                "Yetkiniz Bulunmuyor",
+                                auth.reason
+                            )
+                        ],
+                        ephemeral: true
+                    });
+
+                    return;
+                }
+            }
+
+
+            // ==========================================
+            // RÃœTBE SORGU
+            // ==========================================
+
+            if (
+                command === "rÃ¼tbe-sorgu"
+            ) {
+
+                const username =
+                    interaction.options.getString(
+                        "kullanici"
+                    );
+
+                await interaction.deferReply();
+
+                const user =
+                    await findRobloxUser(
+                        username
+                    );
+
+                if (!user) {
+
+                    await interaction.editReply({
+                        embeds: [
+                            errorEmbed(
+                                "KullanÄ±cÄ± BulunamadÄ±",
+                                `**${username}** isimli Roblox kullanÄ±cÄ±sÄ± bulunamadÄ±.`
+                            )
+                        ]
+                    });
+
+                    return;
+                }
+
+                const links =
+                    loadLinks();
+
+                let found = null;
+
+                for (
+                    const country of Object.keys(GROUPS)
+                ) {
+
+                    if (!GROUPS[country]) {
+                        continue;
+                    }
+
+                    const rank =
+                        await getUserRank(
+                            GROUPS[country],
+                            user.id
+                        );
+
+                    if (rank) {
+
+                        found = {
+                            country,
+                            rank
+                        };
+
+                        break;
+                    }
+                }
+
+                if (!found) {
+
+                    await interaction.editReply({
+                        embeds: [
+                            errorEmbed(
+                                "Grup ÃœyeliÄŸi BulunamadÄ±",
+                                `**${username}** hiÃ§bir aktif Ã¼lke grubunda bulunamadÄ±.`
+                            )
+                        ]
+                    });
+
+                    return;
+                }
+
+                await interaction.editReply({
+                    embeds: [
+                        successEmbed(
+                            "Roblox RÃ¼tbe Sorgusu",
+                            `**KullanÄ±cÄ±:** ${user.name}\n` +
+                            `**KullanÄ±cÄ± ID:** ${user.id}\n` +
+                            `**Ãœlke:** ${found.country}\n` +
+                            `**RÃ¼tbe:** ${found.rank.name}\n` +
+                            `**Rank:** ${found.rank.rank}`
+                        )
+                    ]
+                });
+
+                return;
+            }
+
+
+            // ==========================================
+            // GRUP LÄ°STELE
+            // ==========================================
+
+            if (
+                command === "grup-listele"
+            ) {
+
+                const reason =
+                    interaction.options.getString(
+                        "sebep"
+                    );
+
+                const country =
+                    "turkiye";
+
+                const groupId =
+                    GROUPS[country];
+
+                await interaction.deferReply();
+
+                if (!groupId) {
+
+                    await interaction.editReply({
+                        embeds: [
+                            errorEmbed(
+                                "Grup BulunamadÄ±",
+                                "TÃ¼rkiye Roblox grup ID'si ayarlanmamÄ±ÅŸ."
+                            )
+                        ]
+                    });
+
+                    return;
+                }
+
+                const roles =
+                    await getGroupRoles(
+                        groupId
+                    );
+
+                await interaction.editReply({
+                    embeds: [
+                        infoEmbed(
+                            "Roblox Grup RÃ¼tbeleri",
+                            `**Grup ID:** ${groupId}\n\n` +
+                            roles
+                                .map(
+                                    role =>
+                                        `â€¢ **${role.name}** â€” Rank ${role.rank}`
+                                )
+                                .join("\n")
+                        )
+                    ]
+                });
+
+                await sendLog(
+                    infoEmbed(
+                        "Grup Listeleme",
+                        `**Yetkili:** ${interaction.user}\n**Sebep:** ${reason}`
+                    )
+                );
+
+                return;
+            }
+
+
+            // ==========================================
+            // RÃœTBE DEÄžÄ°ÅžTÄ°R
+            // ==========================================
+
+            if (
+                command === "rÃ¼tbe-degistir"
+            ) {
+
+                const username =
+                    interaction.options.getString(
+                        "kullanici"
+                    );
+
+                const country =
+                    interaction.options.getString(
+                        "ulke"
+                    );
+
+                const roleName =
+                    interaction.options.getString(
+                        "rutbe"
+                    );
+
+                const reason =
+                    interaction.options.getString(
+                        "sebep"
+                    );
+
+                const groupId =
+                    GROUPS[country];
+
+                const countryRoles =
+                    COUNTRY_ROLES[country] || [];
+
+                const selected =
+                    countryRoles.find(
+                        role =>
+                            role.roleName ===
+                            roleName
+                    );
+
+                if (!selected) {
+
+                    await interaction.reply({
+                        embeds: [
+                            errorEmbed(
+                                "RÃ¼tbe GeÃ§ersiz",
+                                "SeÃ§tiÄŸiniz rÃ¼tbe bu Ã¼lkeye ait deÄŸil."
+                            )
+                        ],
+                        ephemeral: true
+                    });
+
+                    return;
+                }
+
+                await interaction.deferReply();
+
+                const user =
+                    await findRobloxUser(
+                        username
+                    );
+
+                if (!user) {
+
+                    await interaction.editReply({
+                        embeds: [
+                            errorEmbed(
+                                "KullanÄ±cÄ± BulunamadÄ±",
+                                `**${username}** Roblox'ta bulunamadÄ±.`
+                            )
+                        ]
+                    });
+
+                    return;
+                }
+
+                const roles =
+                    await getGroupRoles(
+                        groupId
+                    );
+
+                const targetRole =
+                    roles.find(
+                        role =>
+                            role.name ===
+                            selected.roleName
+                    );
+
+                if (!targetRole) {
+
+                    await interaction.editReply({
+                        embeds: [
+                            errorEmbed(
+                                "RÃ¼tbe BulunamadÄ±",
+                                `Roblox grubunda **${selected.roleName}** isimli rÃ¼tbe bulunamadÄ±.`
+                            )
+                        ]
+                    });
+
+                    return;
+                }
+
+                await changeRank(
+                    groupId,
+                    user.id,
+                    targetRole.id
+                );
+
+                await interaction.editReply({
+                    embeds: [
+                        successEmbed(
+                            "RÃ¼tbe DeÄŸiÅŸtirildi",
+                            `**${user.name}** kullanÄ±cÄ±sÄ±nÄ±n rÃ¼tbesi deÄŸiÅŸtirildi.\n\n` +
+                            `**Ãœlke:** ${country}\n` +
+                            `**Yeni RÃ¼tbe:** ${targetRole.name}\n` +
+                            `**Yetkili:** ${interaction.user}\n` +
+                            `**Sebep:** ${reason}`
+                        )
+                    ]
+                });
+
+                await sendLog(
+                    successEmbed(
+                        "Roblox RÃ¼tbe DeÄŸiÅŸikliÄŸi",
+                        `**KullanÄ±cÄ±:** ${user.name}\n` +
+                        `**Ãœlke:** ${country}\n` +
+                        `**Yeni RÃ¼tbe:** ${targetRole.name}\n` +
+                        `**Yetkili:** ${interaction.user}\n` +
+                        `**Sebep:** ${reason}`
+                    )
+                );
+
+                return;
+            }
+
+
+            // ==========================================
+            // RÃœTBE TERFÄ°
+            // ==========================================
+
+            if (
+                command === "rÃ¼tbe-terfi"
+            ) {
+
+                const country =
+                    interaction.options.getString(
+                        "ulke"
+                    );
+
+                const username =
+                    interaction.options.getString(
+                        "kullanici"
+                    );
+
+                const reason =
+                    interaction.options.getString(
+                        "sebep"
+                    );
+
+                const groupId =
+                    GROUPS[country];
+
+                await interaction.deferReply();
+
+                const user =
+                    await findRobloxUser(
+                        username
+                    );
+
+                if (!user) {
+
+                    await interaction.editReply({
+                        embeds: [
+                            errorEmbed(
+                                "KullanÄ±cÄ± BulunamadÄ±",
+                                `**${username}** Roblox'ta bulunamadÄ±.`
+                            )
+                        ]
+                    });
+
+                    return;
+                }
+
+                const current =
+                    await getUserRank(
+                        groupId,
+                        user.id
+                    );
+
+                if (!current) {
+
+                    await interaction.editReply({
+                        embeds: [
+                            errorEmbed(
+                                "Grup ÃœyeliÄŸi BulunamadÄ±",
+                                "KullanÄ±cÄ± bu Ã¼lkenin Roblox grubunda deÄŸil."
+                            )
+                        ]
+                    });
+
+                    return;
+                }
+
+                const roles =
+                    await getGroupRoles(
+                        groupId
+                    );
+
+                const next =
+                    roles
+                        .filter(
+                            role =>
+                                role.rank >
+                                current.rank
+                        )
+                        .sort(
+                            (a, b) =>
+                                a.rank - b.rank
+                        )[0];
+
+                if (!next) {
+
+                    await interaction.editReply({
+                        embeds: [
+                            errorEmbed(
+                                "Terfi Edilemedi",
+                                "Bu kullanÄ±cÄ± iÃ§in daha yÃ¼ksek bir rÃ¼tbe bulunamadÄ±."
+                            )
+                        ]
+                    });
+
+                    return;
+                }
+
+                await changeRank(
+                    groupId,
+                    user.id,
+                    next.id
+                );
+
+                await interaction.editReply({
+                    embeds: [
+                        successEmbed(
+                            "RÃ¼tbe Terfi Ettirildi",
+                            `**${user.name}** kullanÄ±cÄ±sÄ± terfi ettirildi.\n\n` +
+                            `**Eski RÃ¼tbe:** ${current.name}\n` +
+                            `**Yeni RÃ¼tbe:** ${next.name}\n` +
+                            `**Sebep:** ${reason}`
+                        )
+                    ]
+                });
+
+                await sendLog(
+                    successEmbed(
+                        "Roblox Terfi Logu",
+                        `**KullanÄ±cÄ±:** ${user.name}\n` +
+                        `**Ãœlke:** ${country}\n` +
+                        `**Eski:** ${current.name}\n` +
+                        `**Yeni:** ${next.name}\n` +
+                        `**Yetkili:** ${interaction.user}\n` +
+                        `**Sebep:** ${reason}`
+                    )
+                );
+
+                return;
+            }
+
+
+            // ==========================================
+            // UPDATE
+            // ==========================================
+
+            if (
+                command === "update"
+            ) {
+
+                const links =
+                    loadLinks();
+
+                const linked =
+                    links[interaction.user.id];
+
+                if (!linked) {
+
+                    await interaction.reply({
+                        embeds: [
+                            errorEmbed(
+                                "Roblox HesabÄ± BaÄŸlÄ± DeÄŸil",
+                                "Roblox hesabÄ±nÄ±z henÃ¼z doÄŸrulanmamÄ±ÅŸ."
+                            )
+                        ],
+                        ephemeral: true
+                    });
+
+                    return;
+                }
+
+                await interaction.deferReply();
+
+                const groupId =
+                    GROUPS[linked.country];
+
+                const rank =
+                    await getUserRank(
+                        groupId,
+                        linked.robloxId
+                    );
+
+                if (!rank) {
+
+                    await interaction.editReply({
+                        embeds: [
+                            errorEmbed(
+                                "RÃ¼tbe BulunamadÄ±",
+                                "Roblox grubundaki Ã¼yeliÄŸiniz bulunamadÄ±."
+                            )
+                        ]
+                    });
+
+                    return;
+                }
+
+                const discordMember =
+                    await interaction.guild.members.fetch(
+                        interaction.user.id
+                    );
+
+                const discordRole =
+                    interaction.guild.roles.cache.find(
+                        role =>
+                            role.name ===
+                            rank.name
+                    );
+
+                if (discordRole) {
+
+                    await discordMember.roles.add(
+                        discordRole
+                    );
+                }
+
+                await interaction.editReply({
+                    embeds: [
+                        successEmbed(
+                            "Profil GÃ¼ncellendi",
+                            `Roblox rÃ¼tbeniz baÅŸarÄ±yla kontrol edildi.\n\n` +
+                            `**Ãœlke:** ${linked.country}\n` +
+                            `**Roblox RÃ¼tbesi:** ${rank.name}\n` +
+                            `**Rank:** ${rank.rank}`
+                        )
+                    ]
+                });
+
+                return;
+            }
+
+
+            // ==========================================
+            // DUYURU
+            // ==========================================
+
+            if (
+                command === "duyuru"
+            ) {
+
+                const modal =
+                    new ModalBuilder()
+                        .setCustomId(
+                            "announcement_modal"
+                        )
+                        .setTitle(
+                            "ðŸ“¢ Duyuru OluÅŸtur"
+                        );
+
+                const title =
+                    new TextInputBuilder()
+                        .setCustomId(
+                            "announcement_title"
+                        )
+                        .setLabel(
+                            "Duyuru BaÅŸlÄ±ÄŸÄ±"
+                        )
+                        .setStyle(
+                            TextInputStyle.Short
+                        )
+                        .setRequired(true)
+                        .setMaxLength(256);
+
+                const content =
+                    new TextInputBuilder()
+                        .setCustomId(
+                            "announcement_content"
+                        )
+                        .setLabel(
+                            "Duyuru Ä°Ã§eriÄŸi"
+                        )
+                        .setStyle(
+                            TextInputStyle.Paragraph
+                        )
+                        .setRequired(true)
+                        .setMaxLength(4000);
+
+                modal.addComponents(
+                    new ActionRowBuilder()
+                        .addComponents(title),
+
+                    new ActionRowBuilder()
+                        .addComponents(content)
+                );
+
+                await interaction.showModal(
+                    modal
+                );
+
+                return;
+            }
+
+
+            // ==========================================
+            // TICKET PANEL
+            // ==========================================
+
+            if (
+                command === "ticket-panel"
+            ) {
+
+                const reason =
+                    interaction.options.getString(
+                        "sebep"
+                    );
+
+                const menu =
+                    new StringSelectMenuBuilder()
+                        .setCustomId(
+                            "ticket_category"
+                        )
+                        .setPlaceholder(
+                            "Ticket kategorisini seÃ§in..."
+                        )
+                        .addOptions(
+                            {
+                                label:
+                                    "Ordu Åžikayet",
+                                description:
+                                    "Ordu ve personel hakkÄ±nda ÅŸikayet",
+                                value:
+                                    "army",
+                                emoji:
+                                    "ðŸª–"
+                            },
+                            {
+                                label:
+                                    "Sunucu Ä°Ã§i Sorun",
+                                description:
+                                    "Discord sunucusu ve bot sorunlarÄ±",
+                                value:
+                                    "server",
+                                emoji:
+                                    "ðŸ› ï¸"
+                            },
+                            {
+                                label:
+                                    "Gamepass",
+                                description:
+                                    "Gamepass destek ve teslimat sorunlarÄ±",
+                                value:
+                                    "gamepass",
+                                emoji:
+                                    "ðŸŽŸï¸"
+                            }
+                        );
+
+                const row =
+                    new ActionRowBuilder()
+                        .addComponents(
+                            menu
+                        );
+
+                const info =
+                    new EmbedBuilder()
+                        .setColor(
+                            0x3498db
+                        )
+                        .setTitle(
+                            "ðŸŽ« BirleÅŸmiÅŸ Milletler Destek Merkezi"
+                        )
+                        .setDescription(
+                            "Destek almak iÃ§in aÅŸaÄŸÄ±daki kategorilerden uygun olanÄ± seÃ§in."
+                        )
+                        .addFields(
+                            {
+                                name:
+                                    "ðŸª– Ordu Åžikayet",
+                                value:
+                                    "Ordu, personel ve oyun iÃ§i askeri konular."
+                            },
+                            {
+                                name:
+                                    "ðŸ› ï¸ Sunucu Ä°Ã§i Sorun",
+                                value:
+                                    "Discord, roller, kanallar, bot ve sunucu sorunlarÄ±."
+                            },
+                            {
+                                name:
+                                    "ðŸŽŸï¸ Gamepass",
+                                value:
+                                    "Gamepass satÄ±n alma, teslimat ve destek sorunlarÄ±."
+                            },
+                            {
+                                name:
+                                    "âš ï¸ Ticket KurallarÄ±",
+                                value:
+                                    "Gereksiz ticket aÃ§mayÄ±n.\n" +
+                                    "SaygÄ±lÄ± olun.\n" +
+                                    "Sahte ÅŸikayet oluÅŸturmayÄ±n.\n" +
+                                    "Spam yapmayÄ±n.\n" +
+                                    "DoÄŸru bilgileri paylaÅŸÄ±n.\n" +
+                                    "Kategori dÄ±ÅŸÄ± ticket aÃ§mayÄ±n."
+                            }
+                        )
+                        .setFooter({
+                            text:
+                                "Destek sistemi"
+                        })
+                        .setTimestamp();
+
+                await interaction.channel.send({
+                    embeds: [info],
+                    components: [row]
+                });
+
+                await interaction.reply({
+                    embeds: [
+                        successEmbed(
+                            "Ticket Paneli OluÅŸturuldu",
+                            `Panel baÅŸarÄ±yla gÃ¶nderildi.\n\n**Sebep:** ${reason}`
+                        )
+                    ],
+                    ephemeral: true
+                });
+
+                return;
+            }
+
+        } catch (error) {
+
+            console.error(
+                "INTERACTION HATASI:",
+                error
+            );
+
+            const embed =
+                errorEmbed(
+                    "Ä°ÅŸlem BaÅŸarÄ±sÄ±z",
+                    `Bir hata oluÅŸtu.\n\n\`${error.message}\``
+                );
+
+            try {
+
+                if (
+                    interaction.replied ||
+                    interaction.deferred
+                ) {
+
+                    await interaction.editReply({
+                        embeds: [embed]
+                    });
+
+                } else {
+
+                    await interaction.reply({
+                        embeds: [embed],
+                        ephemeral: true
+                    });
+                }
+
+            } catch {}
+        }
+    }
+);
+
+
+// ======================================================
+// BOT LOGIN
+// ======================================================
+
+client.login(
+    process.env.DISCORD_TOKEN
+);
